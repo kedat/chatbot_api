@@ -21,15 +21,11 @@ def add_entity(kind, data):
     return entity
 
 def update_entity(bot_id, data):
-    with datastore_client.transaction():
-        # key = datastore_client.key("bot_id", bot_id)
-        # task = datastore_client.get(key)
-        key = datastore_client.key("chatbotdata", bot_id)
-        task = datastore_client.get(key)
-        print('task', task)
-
-        # task["data"] = 'True'
-        # datastore_client.put(task)
+    query = datastore_client.query(kind='chatbotdata')
+    query.add_filter(filter=PropertyFilter("bot_id", "=", bot_id))
+    results = list(query.fetch())
+    results[0]['data']=data
+    datastore_client.put(results[0])
     return None
 
 def delete_entity(kind, entity_id):
@@ -45,14 +41,14 @@ def create_user(data):
 
 def fetch_user(data):
     query = datastore_client.query(kind='user')
-    query.add_filter(filter=PropertyFilter("username", "=", data['username']))
+    query.add_filter(filter=PropertyFilter("email", "=", data['email']))
     query.add_filter(filter=PropertyFilter("password", "=", data['password']))
     results = list(query.fetch())
     return results
 
 def check_user(data):
     query = datastore_client.query(kind='user')
-    query.add_filter(filter=PropertyFilter("username", "=", data['username']))
+    query.add_filter(filter=PropertyFilter("email", "=", data['email']))
     results = list(query.fetch())
     return results
 

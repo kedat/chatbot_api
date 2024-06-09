@@ -91,52 +91,35 @@ def chat_with_documents(request):
 
 
 @csrf_exempt
-def choose_bot(request):
+def update_data(request):
     if request.method == 'POST':
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
-            return JsonResponse({'error': 'Authorization header missing'}, status=401)
-        
-        token = auth_header.split(' ')[1]
-        decoded, error = validate_token(token)
-        if error:
-            return JsonResponse({'error': error}, status=401)
         data = json.loads(request.body)
         bot_id = data.get('bot_id').upper()
+        context =''
 
         if not firebase_admin._apps:
-            cred = credentials.Certificate("./complete-verve-420306-firebase-adminsdk-px8jn-bf184e2f58.json")
+            cred = credentials.Certificate("complete-verve-420306-firebase-adminsdk-px8jn-bf184e2f58.json")
             default_app = firebase_admin.initialize_app(cred, {'storageBucket': 'complete-verve-420306.appspot.com'})
             bucket = storage.bucket(app=default_app, name='complete-verve-420306.appspot.com')
 
+            blobs = bucket.list_blobs(prefix=str(bot_id)+'/')
+            data_folder = p.cwd() / str("data/"+str(bot_id))
+            p(data_folder).mkdir(parents=True, exist_ok=True)
+            for blob in blobs:
+                destination_file =p(blob.name)
+                blob.download_to_filename("data/"+bot_id+'/'+re.sub(r'[^\w_. -]', '_', str(destination_file)))
 
-        # blobs = bucket.list_blobs(prefix=str(bot_id)+'/')
-        # data_folder = p.cwd() / str("data/"+str(bot_id))
-        # p(data_folder).mkdir(parents=True, exist_ok=True)
-        # for blob in blobs:
-        #     destination_file =p(blob.name)
-        #     blob.download_to_filename("data/"+bot_id+'/'+re.sub(r'[^\w_. -]', '_', str(destination_file)))
-
-        # pdf_search = data_folder.glob("*.pdf")
-        # # convert the glob generator out put to list
-        # pdf_files = pdf_files = [str(file.absolute()) for file in pdf_search]
-        # context =''
-        # for pdf in pdf_files:
-        # # Extract text from the PDF
-        #     pdf_loader = PyPDFLoader(pdf)
-        #     pages = pdf_loader.load_and_split()
-        #     context = context+"\n\n".join(str(p.page_content) for p in pages)
+            pdf_search = data_folder.glob("*.pdf")
+        # convert the glob generator out put to list
+            pdf_files = pdf_files = [str(file.absolute()) for file in pdf_search]
+            for pdf in pdf_files:
+            # Extract text from the PDF
+                pdf_loader = PyPDFLoader(pdf)
+                pages = pdf_loader.load_and_split()
+                context = context+"\n\n".join(str(p.page_content) for p in pages)
         
-        firebase_admin.delete_app(default_app)
-        # print("Context", context)
-        data = {
-            'bot_id': bot_id.lower(),
-            'data': 'context'
-        }
-        add_entity('chatbotdata', data)
-        update_entity(bot_id.lower(), 'context')
-        # print(entities[0])
-        # Return the response
+            update_entity(bot_id.lower(), context)
+            firebase_admin.delete_app(default_app)
         return JsonResponse({"bot_id": str(bot_id)+'/'})
     else:
         return JsonResponse({"error": "Only POST requests are allowed"})
@@ -145,26 +128,26 @@ def choose_bot(request):
 def register(request):
     if request.method == 'POST':
         data = json.loads(request.body)
+        email = data.get('email')
         username = data.get('username') 
         password = data.get('password')
         phone = data.get('phone')
-        email = data.get('email')
-        data_fields = ['username', 'password', 'phone', 'email']  # Fields to check
+        data_fields = ['username', 'password', 'phone', 'email']
 
-        email_regex = r"^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$"  # Email regex
+        email_regex = r"^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$"  
 
         # Combine field checks and email validation using list comprehension and 'all'
         if not all(data.get(field) and (field != 'email' or re.match(email_regex, email)) for field in data_fields):
-            return JsonResponse({'message': 'Some fields are missing or invalid'}, status=400)
+            return JsonResponse({'error': 'Some fields are missing or invalid'}, status=400)
 
 
         data = {
-            'username': username,
+            'email': email,
         }
         result=check_user(data)
         
         if result:
-            return JsonResponse({"error": 'This username is already existed'}, status=409)
+            return JsonResponse({"error": 'This email is already existed'}, status=409)
         else:
             salt = "5gz"
             
@@ -174,13 +157,13 @@ def register(request):
             hashed = hashlib.md5(dataBase_password.encode()).hexdigest()
             
             data = {
+                'email': email,
                 'username': username,
                 'password': hashed,
                 'phone': phone,
-                'email': email,
             }
             result=create_user(data)
-            expiration = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
+            expiration = datetime.datetime.utcnow() + datetime.timedelta(minutes=50)
             encoded_jwt = jwt.encode(data| {"exp": expiration}, "secret", algorithm="HS256")
             
             return JsonResponse({"result": result, "token": encoded_jwt})
@@ -191,7 +174,7 @@ def register(request):
 def login(request):
     if request.method == 'POST':
         data = json.loads(request.body)
-        username = data.get('username') 
+        email = data.get('email') 
         password = data.get('password')
                 
         # adding 5gz as password
@@ -203,17 +186,17 @@ def login(request):
         hashed = hashlib.md5(dataBase_password.encode()).hexdigest()
         
         data = {
-            'username': username,
+            'email': email,
             'password': hashed
         }
         result=fetch_user(data)
-        if(result[0]):
-            expiration = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
+        if result:
+            expiration = datetime.datetime.utcnow() + datetime.timedelta(minutes=50)
             encoded_jwt = jwt.encode(data| {"exp": expiration}, "secret", algorithm="HS256")
             
             return JsonResponse({"result": result, "token": encoded_jwt})
         else:
-            return JsonResponse({"result": 'Wrong username or password'})
+            return JsonResponse({"error": 'Wrong email or password'}, status=400)
         
     else:
         return JsonResponse({"error": "Only POST requests are allowed"})
