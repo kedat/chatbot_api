@@ -30,7 +30,7 @@ local_settings.py
 .coverage
 
 # Pip freeze or virtualenv requirements
-requirements.txt
+# requirements.txt
 Pipfile.lock (if using Pipenv)
 # Poetry configuration (if using Poetry)
 pyproject.toml
