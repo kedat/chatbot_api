@@ -23,7 +23,7 @@ import jwt
 import datetime
 from jwt import ExpiredSignatureError, InvalidTokenError
 
-os.environ['google_api_key'] = 'AIzaSyA1bRIdIvqk7Aq8InqSAEfTtc93jwurlcs'
+os.environ['google_api_key'] = 'AIzaSyD5hkSzLGV8rLVKk5g6qW-nWPufkn0UT98'
 APPEND_SLASH = False
 
 # Configure Google Generative AI
@@ -59,10 +59,16 @@ def chat_with_documents(request):
         context = entities[0]['data']
 
         # Process the question with the extracted context
-        prompt_template = """Trả lời câu hỏi với ngữ cảnh được cho. Nếu câu trả lời không có trong ngữ cảnh, trả về "Chưa đủ dữ liệu để trả lời" \n\n
-                    Ngữ cảnh: \n {context}?\n
-                    Câu hỏi: \n {question} \n
-                    Câu trả lời:
+        # prompt_template = """Trả lời câu hỏi với ngữ cảnh được cho. Nếu câu trả lời không có trong ngữ cảnh, trả về "Chưa đủ dữ liệu để trả lời" \n\n
+        #             Ngữ cảnh: \n {context}?\n
+        #             Câu hỏi: \n {question} \n
+        #             Câu trả lời:
+        #           """
+        prompt_template = """Answer the question as precise as possible using the provided context. If the answer is
+                    not contained in the context, say "Chưa đủ dữ liệu để trả lời" \n\n
+                    Context: \n {context}?\n
+                    Question: \n {question} \n
+                    Answer:
                   """
 
         prompt = PromptTemplate(
@@ -120,7 +126,7 @@ def update_data(request):
         
             update_entity(bot_id.lower(), context)
             firebase_admin.delete_app(default_app)
-        return JsonResponse({"bot_id": str(bot_id)+'/'})
+        return JsonResponse({"bot_id": str(bot_id)+'/', "context":context})
     else:
         return JsonResponse({"error": "Only POST requests are allowed"})
 
