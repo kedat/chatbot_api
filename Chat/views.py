@@ -104,7 +104,7 @@ def update_data(request):
         context =''
 
         if not firebase_admin._apps:
-            cred = credentials.Certificate("complete-verve-420306-firebase-adminsdk-px8jn-bf184e2f58.json")
+            cred = credentials.Certificate("complete-verve-420306-firebase-adminsdk-px8jn-d8c65cdb28.json")
             default_app = firebase_admin.initialize_app(cred, {'storageBucket': 'complete-verve-420306.appspot.com'})
             bucket = storage.bucket(app=default_app, name='complete-verve-420306.appspot.com')
 

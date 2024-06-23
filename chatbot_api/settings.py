@@ -143,7 +143,7 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Path to your service account key file
-SERVICE_ACCOUNT_KEY= r'C:\Users\datma\Documents\Study\S8\Mobile\chatbot_api\complete-verve-420306-firebase-adminsdk-px8jn-bf184e2f58.json'
+SERVICE_ACCOUNT_KEY= r'C:\Users\datma\Documents\Study\S8\Mobile\chatbot_api\complete-verve-420306-firebase-adminsdk-px8jn-d8c65cdb28.json'
 
 # Initialize the Datastore client
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = SERVICE_ACCOUNT_KEY
